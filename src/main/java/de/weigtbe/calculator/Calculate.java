@@ -1,6 +1,7 @@
 package de.weigtbe.calculator;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,13 +21,9 @@ public class Calculate {
     BigDecimal result;
 
 
-    //Checking every type
-
     switch(request.getType()){
 
       case "integer":
-
-        //Going through all BigDecimals to check if they are valid integers
 
         for (BigDecimal decimalNumber : values) {
 
@@ -54,7 +51,6 @@ public class Calculate {
 
     }
 
-    //Checking the operator
 
     switch (request.getOperation()){
 
@@ -68,7 +64,27 @@ public class Calculate {
         result = multiply(values);
         break;
       case "div":
-        result = divide(values);
+
+        try{
+
+          if(request.getType().equals("safe")){
+
+            result = divide(values);
+
+          } else {
+
+            result = divide(values, 5);
+
+          }
+
+
+
+        } catch (ArithmeticException exception){
+
+          return new ResponseEntity<>(new ErrorResponse("Mathematical error"), HttpStatus.BAD_REQUEST);
+
+        }
+
         break;
 
       default:
@@ -132,6 +148,22 @@ public class Calculate {
       result = result.divide(values.get(i));
 
     }
+
+    return result;
+
+  }
+
+  private BigDecimal divide(List<BigDecimal> values, int decimalPoints){
+
+    BigDecimal result = values.get(0);
+
+    for (int i = 1; i < values.size(); i++) {
+
+      result = result.divide(values.get(i), decimalPoints, RoundingMode.HALF_EVEN);
+
+    }
+
+    result = result.stripTrailingZeros();
 
     return result;
 
